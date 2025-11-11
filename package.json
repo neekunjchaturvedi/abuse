@@ -1,0 +1,23 @@
+{
+  "name": "abuse",
+  "version": "1.0.0",
+  "description": "A terminal which roasts you and helps you",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node bin/abuse.js",
+    "test": "node bin/abuse.js test"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^11.0.0",
+    "fast-levenshtein": "^3.0.0",
+    "fs-extra": "^11.1.1",
+    "string-similarity": "^4.0.4"
+  },
+  "bin": {
+    "abuse": "./bin/abuse.js"
+  },
+  "author": "neekunjchaturvedi",
+  "license": "ISC",
+  "type": "module"
+}
