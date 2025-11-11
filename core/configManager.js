@@ -1,4 +1,4 @@
-import fs from "fs";
+import fs from "fs-extra";
 import path from "path";
 import os from "os";
 
@@ -15,40 +15,43 @@ const defaultConfig = {
   allow_in_scripts: false,
   exempt_commands: ["sudo", "ssh"],
   insult_style: "sarcastic",
-  data_dir: "~/.abuse",
+  data_dir: path.join(os.homedir(), ".abuse"),
 };
 
 function ensureConfigExists() {
   const dir = path.dirname(CONFIG_PATH);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.ensureDirSync(dir);
 
   if (!fs.existsSync(CONFIG_PATH)) {
-    fs.writeFileSync(CONFIG_PATH, JSON.stringify(defaultConfig, null, 2));
+    fs.writeJsonSync(CONFIG_PATH, defaultConfig, { spaces: 2 });
   }
 }
 
 function loadConfig() {
   ensureConfigExists();
   try {
-    const raw = fs.readFileSync(CONFIG_PATH, "utf8");
-    const parsed = JSON.parse(raw);
-    return { ...defaultConfig, ...parsed };
+    const userConfig = fs.readJsonSync(CONFIG_PATH);
+    return { ...defaultConfig, ...userConfig };
   } catch (err) {
-    console.error("⚠️ Failed to load config, using defaults:", err.message);
+    console.error(
+      "⚠️ Failed to load config, resetting to defaults:",
+      err.message
+    );
+    saveConfig(defaultConfig);
     return defaultConfig;
   }
 }
 
 function saveConfig(newConfig) {
   ensureConfigExists();
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(newConfig, null, 2));
+  fs.writeJsonSync(CONFIG_PATH, newConfig, { spaces: 2 });
 }
 
 function updateConfig(key, value) {
   const config = loadConfig();
   config[key] = value;
   saveConfig(config);
-  console.log(`✅ Updated '${key}' to '${value}'`);
+  console.log(`✅ Updated '${key}' to`, value);
 }
 
 export { CONFIG_PATH, defaultConfig, loadConfig, saveConfig, updateConfig };

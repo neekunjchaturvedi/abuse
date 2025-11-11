@@ -1,17 +1,44 @@
 import { Command } from "commander";
 import chalk from "chalk";
+import fs from "fs";
+import path from "path";
+import { execSync } from "child_process";
+import stringSimilarity from "string-similarity";
 import { TemplateEngine } from "../core/templateEngine.js";
 import { LogManager } from "../core/logManager.js";
-import stringSimilarity from "string-similarity";
-import { execSync } from "child_process";
-import fs from "fs";
 import { loadConfig } from "../core/configManager.js";
 
 export const handleCommand = new Command("handle")
   .argument("<attempt>", "The mistyped or failed command")
   .description("Handle a mistyped or failed command with humor and help.")
   .action(async (attempt) => {
-    // 🧠 Step 1: Collect available commands
+    const config = loadConfig();
+
+    // 🧱 1️⃣ Respect config
+    if (!config.enabled) {
+      console.log(chalk.gray("⚙️ Abuse is disabled in config."));
+      return;
+    }
+
+    if (config.exempt_commands.includes(attempt)) {
+      console.log(
+        chalk.gray(`🚫 Command '${attempt}' is exempted from roasting.`)
+      );
+      return;
+    }
+
+    // 📂 2️⃣ Load typo map
+    const commonCommandsPath = path.resolve("./data/common/commands.json");
+    let commonMap = {};
+    if (fs.existsSync(commonCommandsPath)) {
+      try {
+        commonMap = JSON.parse(fs.readFileSync(commonCommandsPath, "utf8"));
+      } catch {
+        console.error(chalk.red("⚠️ Failed to parse common-commands.json"));
+      }
+    }
+
+    // 🧠 3️⃣ Collect all system commands
     let allCommands = [];
     try {
       const compgenOutput = execSync("compgen -c", {
@@ -19,12 +46,10 @@ export const handleCommand = new Command("handle")
       }).toString();
       allCommands = compgenOutput.split("\n").filter(Boolean);
     } catch {
-      console.error(
-        chalk.red("⚠️  Failed to fetch system commands from shell.")
-      );
+      console.error(chalk.red("⚠️ Failed to fetch system commands."));
     }
 
-    // 🧠 Step 2: Also scan PATH for executables
+    // 🧩 4️⃣ Add executables from PATH
     const pathDirs = process.env.PATH.split(":");
     for (const dir of pathDirs) {
       try {
@@ -32,30 +57,30 @@ export const handleCommand = new Command("handle")
         allCommands.push(...files);
       } catch {}
     }
-    allCommands = [...new Set(allCommands)]; // remove duplicates
+    allCommands = [...new Set(allCommands)];
 
-    // ✅ Step 3: Check if valid command
-    if (allCommands.includes(attempt)) {
-      console.log(
-        chalk.greenBright(
-          `✅  "${attempt}" is a valid command. No roast today!`
-        )
-      );
-      return;
-    }
-    const config = loadConfig();
-    if (!config.enabled) {
-      console.log("⚙️ Abuse is disabled in config.");
-      return;
+    // 🧰 5️⃣ Check if the command exists in system PATH
+    let commandExists = false;
+    try {
+      execSync(`which ${attempt}`, { stdio: "ignore" });
+      commandExists = true;
+    } catch {
+      commandExists = false;
     }
 
-    // 💀 Step 4: Roast
+    // 💀 6️⃣ Generate insult
     const engine = new TemplateEngine();
-    const insult = engine.generateInsult("medium", "sarcastic");
+    const insult = engine.generateInsult(
+      config.severity,
+      config.insult_style,
+      config.language
+    );
 
-    // 🎯 Step 5: Fuzzy match for suggestions
+    // 🎯 7️⃣ Suggestion logic
     let suggestion = "";
-    if (allCommands.length > 0) {
+    if (commonMap[attempt]) {
+      suggestion = commonMap[attempt];
+    } else if (allCommands.length > 0) {
       const { bestMatch } = stringSimilarity.findBestMatch(
         attempt,
         allCommands
@@ -64,23 +89,33 @@ export const handleCommand = new Command("handle")
       if (bestMatch.rating > threshold) suggestion = bestMatch.target;
     }
 
-    // 💬 Step 6: Output roast
-    console.log(chalk.redBright(`💀  ${insult}`));
-
-    if (suggestion)
-      console.log(chalk.greenBright(`💡  Maybe you meant: ${suggestion}`));
-    else
+    // 🧾 8️⃣ Output section
+    if (!commandExists) {
+      // console.log(chalk.redBright(`❌ Command "${attempt}" is not installed.`));
+      console.log(chalk.redBright(`💀 ${insult}`));
+      if (suggestion)
+        console.log(chalk.greenBright(`💡 Maybe you meant: ${suggestion}`));
+      else
+        console.log(
+          chalk.yellowBright(`🤷 No clue what "${attempt}" was supposed to be.`)
+        );
+    } else {
       console.log(
-        chalk.yellowBright(
-          `🤷  Even Google couldn’t guess what that was supposed to be.`
+        chalk.greenBright(
+          `✅ Command "${attempt}" exists — but maybe broken or misconfigured.`
         )
       );
+      console.log(chalk.redBright(`💀 ${insult}`));
+    }
 
-    // 🧾 Step 7: Log event
+    // 🪵 9️⃣ Log
     LogManager.log({
       command: attempt,
       insult,
       suggestion,
+      severity: config.severity,
+      language: config.language,
+      installed: commandExists,
       timestamp: new Date().toISOString(),
     });
   });
