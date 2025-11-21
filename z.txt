@@ -1,5 +1,0 @@
-todo:
-languages
-log displays
-windows support
-Anton support
