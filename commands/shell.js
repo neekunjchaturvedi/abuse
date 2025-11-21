@@ -23,7 +23,7 @@ export const shellCommand = new Command("shell")
     const hook = `
 # --- Abuse++ command interception ---
 command_not_found_handle() {
-  abuse handle "$@"
+  abuse handle "$*"
 }
 # -----------------------------------
 `;
@@ -38,6 +38,6 @@ command_not_found_handle() {
       fs.writeFileSync(rcFile, cleaned);
       console.log(chalk.red(`❌ Abuse shell hook removed from ${rcFile}`));
     } else {
-      console.log("ℹ️ Use --install or --uninstall");
+      console.log("i Use --install or --uninstall");
     }
   });

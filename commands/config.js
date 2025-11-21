@@ -3,9 +3,14 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import chalk from "chalk";
+import { execSync } from "child_process";
 
 const CONFIG_DIR = path.join(os.homedir(), ".abuse");
 const CONFIG_PATH = path.join(CONFIG_DIR, "config.json");
+
+// ENUMS
+const VALID_SEVERITIES = ["low", "medium", "high"];
+const VALID_STYLES = ["sarcastic", "friendly", "badass"];
 
 const defaultConfig = {
   language: "en",
@@ -21,7 +26,7 @@ const defaultConfig = {
   data_dir: "~/.abuse",
 };
 
-// Ensure config folder & file exist
+// Ensure config exists
 function ensureConfigExists() {
   if (!fs.existsSync(CONFIG_DIR)) fs.mkdirSync(CONFIG_DIR, { recursive: true });
 
@@ -35,7 +40,7 @@ function loadConfig() {
   ensureConfigExists();
   const raw = fs.readFileSync(CONFIG_PATH, "utf-8");
   const data = JSON.parse(raw);
-  return { ...defaultConfig, ...data }; // merge defaults + user config
+  return { ...defaultConfig, ...data };
 }
 
 // Save config
@@ -43,46 +48,7 @@ function saveConfig(config) {
   fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
 }
 
-export const configCommand = new Command("config")
-  .description("⚙️ Manage Abuse CLI configuration.")
-  .option("-s, --set <key=value>", "Set a configuration value")
-  .option("-g, --get <key>", "Get a configuration value")
-  .option("-r, --reset", "Reset config to defaults")
-  .option("-p, --path", "Show config file path")
-  .action((options) => {
-    ensureConfigExists();
-    let config = loadConfig();
-
-    if (options.path) {
-      console.log(CONFIG_PATH);
-      return;
-    }
-
-    if (options.reset) {
-      saveConfig(defaultConfig);
-      console.log(chalk.yellowBright("🔄 Config reset to defaults."));
-      return;
-    }
-
-    if (options.set) {
-      const [key, value] = options.set.split("=");
-      if (!key || value === undefined) {
-        console.log(chalk.red("❌ Usage: abuse config --set key=value"));
-        return;
-      }
-
-      config[key] = parseValue(value);
-      saveConfig(config);
-      console.log(chalk.green(`✅ Set ${key} = ${value}`));
-    } else if (options.get) {
-      console.log(config[options.get] ?? chalk.gray("⚠️ Not found"));
-    } else {
-      console.log(chalk.cyan("🧩 Current config:"));
-      console.log(JSON.stringify(config, null, 2));
-    }
-  });
-
-// Helper to auto-parse booleans, numbers, etc.
+// Smart parser
 function parseValue(value) {
   if (value === "true") return true;
   if (value === "false") return false;
@@ -93,3 +59,110 @@ function parseValue(value) {
     return value;
   }
 }
+
+// Validate enums
+function validateEnum(key, value) {
+  if (key === "severity") {
+    if (!VALID_SEVERITIES.includes(value)) {
+      console.log(chalk.red(`❌ Invalid severity: "${value}"`));
+      console.log(chalk.yellow(`➡️  Allowed: ${VALID_SEVERITIES.join(", ")}`));
+      return false;
+    }
+  }
+
+  if (key === "insult_style") {
+    if (!VALID_STYLES.includes(value)) {
+      console.log(chalk.red(`❌ Invalid insult_style: "${value}"`));
+      console.log(chalk.yellow(`➡️  Allowed: ${VALID_STYLES.join(", ")}`));
+      return false;
+    }
+  }
+
+  return true;
+}
+
+export const configCommand = new Command("config")
+  .description("⚙️ Manage Abuse CLI configuration.")
+  .option("-s, --set <key=value>", "Set a configuration value")
+  .option("-g, --get <key>", "Get a configuration value")
+  .option("-d, --delete <key>", "Delete a config key")
+  .option("-r, --reset", "Reset config to defaults")
+  .option("-p, --path", "Show config file path")
+  .option("-o, --open", "Open config file in editor")
+  .action((options) => {
+    ensureConfigExists();
+    let config = loadConfig();
+
+    // PATH
+    if (options.path) {
+      console.log(CONFIG_PATH);
+      return;
+    }
+
+    // OPEN
+    if (options.open) {
+      const editor = process.env.EDITOR || "nano";
+      console.log(chalk.green(`📝 Opening config with: ${editor}`));
+      try {
+        execSync(`${editor} "${CONFIG_PATH}"`, { stdio: "inherit" });
+      } catch (err) {
+        console.error(chalk.red("❌ Failed to open editor:", err.message));
+      }
+      return;
+    }
+
+    // RESET
+    if (options.reset) {
+      saveConfig(defaultConfig);
+      console.log(chalk.yellowBright("🔄 Config reset to defaults."));
+      return;
+    }
+
+    // DELETE
+    if (options.delete) {
+      const key = options.delete;
+      if (!(key in config)) {
+        console.log(chalk.red(`❌ Key '${key}' does not exist in config.`));
+        return;
+      }
+      delete config[key];
+      saveConfig(config);
+      console.log(chalk.green(`🗑️ Deleted key '${key}' from config.`));
+      return;
+    }
+
+    // SET
+    if (options.set) {
+      const [key, valueRaw] = options.set.split("=");
+
+      if (!key || valueRaw === undefined) {
+        console.log(chalk.red("❌ Usage: abuse config --set key=value"));
+        return;
+      }
+
+      const value = parseValue(valueRaw);
+
+      // ENUM VALIDATION
+      if (!validateEnum(key, value)) return;
+
+      config[key] = value;
+      saveConfig(config);
+      console.log(chalk.green(`✅ Set ${key} = ${value}`));
+      return;
+    }
+
+    // GET
+    if (options.get) {
+      const key = options.get;
+      if (!(key in config)) {
+        console.log(chalk.gray("⚠️ Key not found"));
+        return;
+      }
+      console.log(config[key]);
+      return;
+    }
+
+    // SHOW FULL CONFIG
+    console.log(chalk.cyan("🧩 Current config:"));
+    console.log(JSON.stringify(config, null, 2));
+  });

@@ -1,38 +1,26 @@
-import fs from "fs-extra";
+import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-export class TemplateEngine {
-  constructor(lang = "en", style = "sarcastic") {
-    const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    const insultFile = path.resolve(
-      __dirname,
-      "../data/insults",
-      lang,
-      `${style}.json`
-    );
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-    try {
-      if (fs.existsSync(insultFile)) {
-        this.insults = fs.readJSONSync(insultFile);
-      } else {
-        console.warn(
-          `⚠️  No insult file found for ${lang}/${style}. Using fallback.`
-        );
-        this.insults = ["You absolute genius, that's not even close."];
-      }
-    } catch (err) {
-      console.error("❌ Failed to load insult file:", err.message);
-      this.insults = ["Your command broke faster than my patience."];
+export class TemplateEngine {
+  constructor(severity = "medium", style = "sarcastic", lang = "en") {
+    const basePath = path.join(__dirname, "../data/insults");
+    const file = path.join(basePath, lang, style, `${severity}.json`);
+
+    if (fs.existsSync(file)) {
+      this.insults = JSON.parse(fs.readFileSync(file, "utf8"));
+    } else {
+      console.log(
+        `⚠️  No insult file found for ${lang}/${style}/${severity}. Using fallback.`
+      );
+      this.insults = ["You absolute genius, that's not even close."];
     }
   }
 
-  generateInsult(severity = "medium", style = "sarcastic") {
-    if (!Array.isArray(this.insults) || this.insults.length === 0) {
-      return "You're doing great... somewhere else.";
-    }
-
-    // Optionally adjust by severity later
+  generateInsult() {
     const pool = this.insults;
     return pool[Math.floor(Math.random() * pool.length)];
   }

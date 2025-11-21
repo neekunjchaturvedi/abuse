@@ -9,36 +9,40 @@ import { LogManager } from "../core/logManager.js";
 import { loadConfig } from "../core/configManager.js";
 
 export const handleCommand = new Command("handle")
-  .argument("<attempt>", "The mistyped or failed command")
+  .allowUnknownOption(true)
+  .passThroughOptions(true)
+  .argument("<attempt...>", "The mistyped or failed command")
   .description("Handle a mistyped or failed command with humor and help.")
-  .action(async (attempt) => {
+  .action(async (attemptParts) => {
+    const attempt = attemptParts.join(" ");
     const config = loadConfig();
 
-    // 🧱 1️⃣ Respect config
     if (!config.enabled) {
       console.log(chalk.gray("⚙️ Abuse is disabled in config."));
       return;
     }
 
-    if (config.exempt_commands.includes(attempt)) {
+    const baseCommand = attempt.split(" ")[0];
+
+    if (config.exempt_commands.includes(baseCommand)) {
       console.log(
-        chalk.gray(`🚫 Command '${attempt}' is exempted from roasting.`)
+        chalk.gray(`🚫 Command '${baseCommand}' is exempted from roasting.`)
       );
       return;
     }
 
-    // 📂 2️⃣ Load typo map
+    // Load common typo map
     const commonCommandsPath = path.resolve("./data/common/commands.json");
     let commonMap = {};
     if (fs.existsSync(commonCommandsPath)) {
       try {
         commonMap = JSON.parse(fs.readFileSync(commonCommandsPath, "utf8"));
       } catch {
-        console.error(chalk.red("⚠️ Failed to parse common-commands.json"));
+        console.error(chalk.red("⚠️ Failed to parse commands.json"));
       }
     }
 
-    // 🧠 3️⃣ Collect all system commands
+    // All system commands
     let allCommands = [];
     try {
       const compgenOutput = execSync("compgen -c", {
@@ -49,7 +53,7 @@ export const handleCommand = new Command("handle")
       console.error(chalk.red("⚠️ Failed to fetch system commands."));
     }
 
-    // 🧩 4️⃣ Add executables from PATH
+    // PATH executables
     const pathDirs = process.env.PATH.split(":");
     for (const dir of pathDirs) {
       try {
@@ -59,56 +63,68 @@ export const handleCommand = new Command("handle")
     }
     allCommands = [...new Set(allCommands)];
 
-    // 🧰 5️⃣ Check if the command exists in system PATH
+    // Check if command exists (ignoring args)
     let commandExists = false;
     try {
-      execSync(`which ${attempt}`, { stdio: "ignore" });
+      execSync(`which ${baseCommand}`, { stdio: "ignore" });
       commandExists = true;
     } catch {
       commandExists = false;
     }
 
-    // 💀 6️⃣ Generate insult
-    const engine = new TemplateEngine();
-    const insult = engine.generateInsult(
+    // Generate insult
+    const engine = new TemplateEngine(
       config.severity,
       config.insult_style,
       config.language
     );
+    const insult = engine.generateInsult();
 
-    // 🎯 7️⃣ Suggestion logic
+    // Suggestion logic
     let suggestion = "";
-    if (commonMap[attempt]) {
-      suggestion = commonMap[attempt];
-    } else if (allCommands.length > 0) {
+
+    if (commonMap[baseCommand]) {
+      suggestion = commonMap[baseCommand];
+    } else {
       const { bestMatch } = stringSimilarity.findBestMatch(
-        attempt,
+        baseCommand,
         allCommands
       );
-      const threshold = attempt.length <= 3 ? 0.3 : 0.5;
-      if (bestMatch.rating > threshold) suggestion = bestMatch.target;
+
+      const threshold = baseCommand.length <= 3 ? 0.3 : 0.5;
+
+      if (bestMatch.rating > threshold) {
+        suggestion = bestMatch.target;
+      }
     }
 
-    // 🧾 8️⃣ Output section
+    // Output
     if (!commandExists) {
-      // console.log(chalk.redBright(`❌ Command "${attempt}" is not installed.`));
       console.log(chalk.redBright(`💀 ${insult}`));
+      console.log(
+        chalk.redBright(`❌ Command "${baseCommand}" is not installed.`)
+      );
+
       if (suggestion)
         console.log(chalk.greenBright(`💡 Maybe you meant: ${suggestion}`));
       else
         console.log(
-          chalk.yellowBright(`🤷 No clue what "${attempt}" was supposed to be.`)
+          chalk.yellowBright(
+            `🤷 No clue what "${baseCommand}" was supposed to be.`
+          )
         );
     } else {
       console.log(
         chalk.greenBright(
-          `✅ Command "${attempt}" exists — but maybe broken or misconfigured.`
+          `🔍 Command "${baseCommand}" exists — but something went wrong.`
         )
       );
       console.log(chalk.redBright(`💀 ${insult}`));
+
+      if (suggestion && suggestion !== baseCommand)
+        console.log(chalk.greenBright(`💡 Did you mean: ${suggestion}?`));
     }
 
-    // 🪵 9️⃣ Log
     LogManager.log({
       command: attempt,
       insult,
