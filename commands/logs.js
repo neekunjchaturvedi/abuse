@@ -1,28 +1,37 @@
 import { Command } from "commander";
-import fs from "fs";
-import path from "path";
+import { LogManager } from "../core/logManager.js";
 
 export const logsCommand = new Command("logs")
-  .description("🪵 Show or clear abuse CLI logs.")
-  .option("--clear", "Clear the logs")
-  .action((options) => {
-    const logFile = path.join(process.cwd(), "abuse.log");
-
+  .description("🪵 View or clear abuse CLI logs.")
+  .argument("[count]", "Number of recent logs to show", null)
+  .option("--clear", "Clear all logs")
+  .action((count, options) => {
     if (options.clear) {
-      if (fs.existsSync(logFile)) {
-        fs.unlinkSync(logFile);
-        console.log("🧹 Logs cleared!");
-      } else {
-        console.log("⚠️ No logs to clear.");
-      }
+      LogManager.clear();
+      console.log("🧹 Logs cleared!");
       return;
     }
 
-    if (!fs.existsSync(logFile)) {
+    const logs = LogManager.readLogs();
+
+    if (!logs.length) {
       console.log("📭 No logs found.");
       return;
     }
 
-    const logs = fs.readFileSync(logFile, "utf-8");
-    console.log("📜 Logs:\n", logs);
+    let selectedLogs = logs;
+
+    if (count !== null) {
+      const n = parseInt(count, 10);
+      if (!isNaN(n) && n > 0) {
+        selectedLogs = logs.slice(-n);
+      }
+    }
+
+    console.log(`📜 Showing ${selectedLogs.length} log(s):\n`);
+
+    for (const log of selectedLogs) {
+      console.log(LogManager.format(log));
+      console.log(); // spacing
+    }
   });
