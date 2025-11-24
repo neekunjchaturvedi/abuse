@@ -1,6 +1,6 @@
-## Abuse — CLI Roasts & Helpful Suggestions
+## 💀 Abuse — CLI Roasts
 
-Abuse is a small command-line tool that responds to mistyped shell commands with a witty roast and (helpful) suggestions for what you probably meant. It's configurable, multi-language ready, and intended for developers who like a little personality in their terminal.
+Abuse is a small command-line tool that responds to mistyped shell commands with a witty roast. It's configurable, multi-language ready, and intended for developers who like a little personality in their terminal.
 
 ## Highlights
 
@@ -8,7 +8,6 @@ Abuse is a small command-line tool that responds to mistyped shell commands with
 - Fuzzy suggestions for likely intended commands
 - Configurable "insult style" (sarcastic, friendly, badass)
 - Adjustable severity levels (low, medium, high)
-- Per-user config and logs under `~/.abuse`
 - Safe defaults: critical commands can be exempted
 
 ## Install
@@ -21,6 +20,17 @@ npm install -g abuse-cli
 
 After installation the `abuse` command is available system-wide.
 
+## 🔌 Shell Integration (Recommended)
+
+To automatically roast mistyped commands in your shell, run:
+
+```bash
+
+abuse shell --install
+```
+
+This will append a hook to your .bashrc / .zshrc that forwards failed commands to Abuse.
+
 ## Quick Usage
 
 Handle a mistyped command (example):
@@ -31,7 +41,7 @@ abuse handle gti status
 
 Example output:
 
-> ❌ Command "gti" not found.
+> ❌ Command "gti" not found. \
 > 💡 Did you mean: `git`?
 
 Manage config:
@@ -111,9 +121,9 @@ data/
 				│   ├── medium.json
 				│   └── high.json
 				└── badass/
-						├── low.json
-						├── medium.json
-						└── high.json
+					├── low.json
+					├── medium.json
+					└── high.json
 ```
 
 ## Exempt Commands
@@ -152,15 +162,6 @@ Project layout highlights:
 - `core/` — config and log managers, template engine
 - `data/insults` — insult datasets
 
-## Publishing
-
-To publish an update to npm:
-
-```bash
-npm version patch
-npm publish --access public
-```
-
 ## Contributing
 
 Contributions are welcome: bug reports, PRs, and new roast entries. Please:
@@ -178,11 +179,13 @@ MIT © 2025
 
 If you have questions or suggestions, open an issue or reach out via the repository.
 
----
+#### https://github.com/neekunjchaturvedi/abuse
 
-If you want, I can also:
+## Whats Tuning Up
 
-- Add a short `CONTRIBUTING.md` or `CODE_OF_CONDUCT.md`.
-- Add a quick unit test for the suggestion engine.
-
-Let me know which follow-up you'd like.
+```bash
+Windows OS support
+AI Integrations
+Statistics
+and much more
+```
