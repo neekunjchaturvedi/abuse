@@ -1,8 +1,7 @@
 {
   "name": "abuse",
   "version": "1.0.0",
-  "description": "A terminal which roasts you and helps you",
-  "main": "index.js",
+  "description": "A terminal which roasts you",
   "scripts": {
     "dev": "node bin/abuse.js",
     "test": "node bin/abuse.js test"
@@ -17,7 +16,27 @@
   "bin": {
     "abuse": "./bin/abuse.js"
   },
+  "files": [
+    "bin/",
+    "core/",
+    "commands/",
+    "data/",
+    "README.md",
+    "LICENSE"
+  ],
   "author": "neekunjchaturvedi",
   "license": "ISC",
-  "type": "module"
+  "type": "module",
+  "keywords": [
+    "cli",
+    "funny",
+    "terminal",
+    "typo",
+    "roast",
+    "devtools"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neekunjchaturvedi/abuse"
+  }
 }
