@@ -1,6 +1,6 @@
 {
   "name": "abuse_pro",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A terminal which roasts you",
   "scripts": {
     "dev": "node bin/abuse.js",
