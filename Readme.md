@@ -222,3 +222,9 @@ and much more
 `Come up with new ideas`
 
 `Maybe just a correction in the code`
+
+## Because we love FOSS
+Abuse CLI is free, open-source, and community-driven. Built by developer, for developers.
+If you enjoy this project, contribute, report issues, or improve it.
+
+❤️ We believe in FOSS. Fork it, hack it, improve it.
