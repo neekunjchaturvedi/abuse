@@ -15,7 +15,7 @@ Abuse is a small command-line tool that responds to mistyped shell commands with
 Install from npm (global):
 
 ```bash
-npm install -g abuse-cli
+npm install -g abuse-plus
 ```
 
 After installation the `abuse` command is available system-wide.
@@ -25,7 +25,6 @@ After installation the `abuse` command is available system-wide.
 To automatically roast mistyped commands in your shell, run:
 
 ```bash
-
 abuse shell --install
 ```
 
@@ -111,7 +110,33 @@ Example structure:
 ```
 data/
 └── insults/
-		└── en/
+		└── en(english)/
+				├── sarcastic/
+				│   ├── low.json
+				│   ├── medium.json
+				│   └── high.json
+				├── friendly/
+				│   ├── low.json
+				│   ├── medium.json
+				│   └── high.json
+				└── badass/
+					├── low.json
+					├── medium.json
+					└── high.json
+			hi(hindi)/
+				├── sarcastic/
+				│   ├── low.json
+				│   ├── medium.json
+				│   └── high.json
+				├── friendly/
+				│   ├── low.json
+				│   ├── medium.json
+				│   └── high.json
+				└── badass/
+					├── low.json
+					├── medium.json
+					└── high.json
+			te(telugu)/
 				├── sarcastic/
 				│   ├── low.json
 				│   ├── medium.json
@@ -189,3 +214,11 @@ AI Integrations
 Statistics
 and much more
 ```
+
+## What You can do
+
+`Contribute towards Roasts for your prefered language`
+
+`Come up with new ideas`
+
+`Maybe just a correction in the code`
