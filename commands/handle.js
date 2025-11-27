@@ -3,7 +3,7 @@ import chalk from "chalk";
 import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
-import stringSimilarity from "string-similarity";
+import * as fuzz from "fuzzball";
 import { TemplateEngine } from "../core/templateEngine.js";
 import { LogManager } from "../core/logManager.js";
 import { loadConfig } from "../core/configManager.js";
@@ -31,7 +31,7 @@ export const handleCommand = new Command("handle")
       return;
     }
 
-    // Load common typo map
+    // --- Load typo map ---
     const commonCommandsPath = path.resolve("./data/common/commands.json");
     let commonMap = {};
     if (fs.existsSync(commonCommandsPath)) {
@@ -42,13 +42,11 @@ export const handleCommand = new Command("handle")
       }
     }
 
-    // All system commands
+    // --- Collect all possible commands ---
     let allCommands = [];
     try {
-      const compgenOutput = execSync("compgen -c", {
-        shell: "/bin/bash",
-      }).toString();
-      allCommands = compgenOutput.split("\n").filter(Boolean);
+      const compgen = execSync("compgen -c", { shell: "/bin/bash" }).toString();
+      allCommands = compgen.split("\n").filter(Boolean);
     } catch {
       console.error(chalk.red("⚠️ Failed to fetch system commands."));
     }
@@ -63,7 +61,7 @@ export const handleCommand = new Command("handle")
     }
     allCommands = [...new Set(allCommands)];
 
-    // Check if command exists (ignoring args)
+    // --- Does command actually exist? ---
     let commandExists = false;
     try {
       execSync(`which ${baseCommand}`, { stdio: "ignore" });
@@ -72,7 +70,7 @@ export const handleCommand = new Command("handle")
       commandExists = false;
     }
 
-    // Generate insult
+    // --- Generate insult ---
     const engine = new TemplateEngine(
       config.severity,
       config.insult_style,
@@ -80,25 +78,25 @@ export const handleCommand = new Command("handle")
     );
     const insult = engine.generateInsult();
 
-    // Suggestion logic
+    // --- Suggest similar command ---
     let suggestion = "";
 
     if (commonMap[baseCommand]) {
       suggestion = commonMap[baseCommand];
     } else {
-      const { bestMatch } = stringSimilarity.findBestMatch(
-        baseCommand,
-        allCommands
-      );
+      const results = fuzz.extract(baseCommand, allCommands, {
+        scorer: fuzz.partial_ratio,
+      });
 
-      const threshold = baseCommand.length <= 3 ? 0.3 : 0.5;
+      if (results.length > 0) {
+        const [match, score] = results[0];
 
-      if (bestMatch.rating > threshold) {
-        suggestion = bestMatch.target;
+        const threshold = baseCommand.length <= 3 ? 40 : 60;
+        if (score >= threshold) suggestion = match;
       }
     }
 
-    // Output
+    // --- Output ---
     if (!commandExists) {
       console.log(chalk.redBright(`💀 ${insult}`));
       console.log(
@@ -110,7 +108,7 @@ export const handleCommand = new Command("handle")
       else
         console.log(
           chalk.yellowBright(
-            `🤷 No clue what "${baseCommand}" was supposed to be.`
+            `🤷 No idea what "${baseCommand}" was supposed to be.`
           )
         );
     } else {
@@ -125,6 +123,7 @@ export const handleCommand = new Command("handle")
         console.log(chalk.greenBright(`💡 Did you mean: ${suggestion}?`));
     }
 
+    // --- Logging ---
     LogManager.log({
       command: attempt,
       insult,

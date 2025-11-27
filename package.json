@@ -11,7 +11,7 @@
     "commander": "^11.0.0",
     "fast-levenshtein": "^3.0.0",
     "fs-extra": "^11.1.1",
-    "string-similarity": "^4.0.4"
+    "fuzzball": "^2.2.3"
   },
   "bin": {
     "abuse": "./bin/abuse.js"

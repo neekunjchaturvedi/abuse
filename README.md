@@ -14,6 +14,14 @@ Abuse is a small command-line tool that responds to mistyped shell commands with
 
 Install from npm (global):
 
+`For linux and mac: Just hit`
+
+```bash
+sudo npm install -g abuse-plus
+```
+
+`For windows: Open Powershell and hit`
+
 ```bash
 npm install -g abuse-plus
 ```
@@ -224,6 +232,7 @@ and much more
 `Maybe just a correction in the code`
 
 ## Because we love FOSS
+
 Abuse CLI is free, open-source, and community-driven. Built by developer, for developers.
 If you enjoy this project, contribute, report issues, or improve it.
 
