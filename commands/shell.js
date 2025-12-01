@@ -12,58 +12,70 @@ export const shellCommand = new Command("shell")
     const home = os.homedir();
     const shell = process.env.SHELL || "";
 
-    const hookBashZsh = `
-# --- Abuse command interception ---
+    // ---------- 🐧 Bash
+    const hookBash = `
+# --- Abuse++ Hook (Bash/Zsh) ---
 command_not_found_handle() {
   abuse handle "$*"
+}`;
+    // 🦊 Zsh ----------
+    const hookZsh = `
+
+command_not_found_handler() {
+  abuse handle "$*"
 }
-# -----------------------------------
+# --------------------------------
 `;
 
-    const hookPS = `
-# --- Abuse command interception ---
-function Resolve-AbuseCommand {
-    param(\$cmd)
-    abuse handle \$cmd
+    // ---------- 🪟 PowerShell ----------
+    const hookPowerShell = `
+# --- Abuse Command Not Found Hook ---
+function CommandNotFoundHandler(\$commandName, \$commandArgs) {
+    abuse handle "\$commandName"
 }
-Register-EngineEvent PowerShell.OnCommandNotFound -SourceIdentifier AbuseNotFound -Action {
-    Resolve-AbuseCommand \$Event.MessageData
-}
-# -----------------------------------
+# -------------------------------------
 `;
 
+    // Determine which shell config file to patch
     let targetFile;
-    let hook;
+    let hookCode;
 
-    // Linux/mac
     if (shell.includes("bash")) {
       targetFile = path.join(home, ".bashrc");
-      hook = hookBashZsh;
+      hookCode = hookBash;
     } else if (shell.includes("zsh")) {
       targetFile = path.join(home, ".zshrc");
-      hook = hookBashZsh;
-    }
-    // Windows
-    else if (process.platform === "win32") {
+      hookCode = hookZsh;
+    } else if (process.platform === "win32") {
       const profileDir = path.join(home, "Documents", "PowerShell");
       fs.mkdirSync(profileDir, { recursive: true });
       targetFile = path.join(profileDir, "Microsoft.PowerShell_profile.ps1");
-      hook = hookPS;
+      hookCode = hookPowerShell;
     } else {
       console.log(chalk.red("⚠️ Unsupported shell."));
       return;
     }
 
+    // ---------- INSTALL ----------
     if (opts.install) {
-      fs.appendFileSync(targetFile, `\n${hook}`);
+      fs.appendFileSync(targetFile, `\n${hookCode}`);
       console.log(chalk.green(`✅ Abuse hook installed in ${targetFile}`));
-      console.log(chalk.yellow("Restart your terminal to activate it."));
-    } else if (opts.uninstall) {
-      const rc = fs.readFileSync(targetFile, "utf8");
-      const cleaned = rc.replace(hook, "");
-      fs.writeFileSync(targetFile, cleaned);
-      console.log(chalk.red(`❌ Abuse shell hook removed from ${targetFile}`));
-    } else {
-      console.log("Use --install or --uninstall");
+      console.log(
+        chalk.yellow(
+          "Restart your terminal or run: source ~/.zshrc / ~/.bashrc"
+        )
+      );
+      return;
     }
+
+    // ---------- UNINSTALL ----------
+    if (opts.uninstall) {
+      const content = fs.readFileSync(targetFile, "utf8");
+      const cleaned = content.replace(hookCode, "");
+      fs.writeFileSync(targetFile, cleaned);
+      console.log(chalk.red(`❌ Abuse hook removed from ${targetFile}`));
+      return;
+    }
+
+    console.log("Use --install or --uninstall");
   });
