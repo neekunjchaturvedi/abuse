@@ -2,11 +2,8 @@
 import { Command } from "commander";
 import chalk from "chalk";
 import { execSync } from "child_process";
-
 import { handleCommand } from "../commands/handle.js";
 import { testCommand } from "../commands/test.js";
-import { initCommand } from "../commands/init.js";
-import { analyzeCommand } from "../commands/analyze.js";
 import { configCommand } from "../commands/config.js";
 import { logsCommand } from "../commands/logs.js";
 import { shellCommand } from "../commands/shell.js";
@@ -20,8 +17,6 @@ program
 
 program.addCommand(handleCommand);
 program.addCommand(testCommand);
-program.addCommand(initCommand);
-program.addCommand(analyzeCommand);
 program.addCommand(configCommand);
 program.addCommand(logsCommand);
 program.addCommand(shellCommand);

@@ -7,6 +7,10 @@ import * as fuzz from "fuzzball";
 import { TemplateEngine } from "../core/templateEngine.js";
 import { LogManager } from "../core/logManager.js";
 import { loadConfig } from "../core/configManager.js";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const handleCommand = new Command("handle")
   .allowUnknownOption(true)
@@ -31,8 +35,12 @@ export const handleCommand = new Command("handle")
       return;
     }
 
-    // --- Load typo map ---
-    const commonCommandsPath = path.resolve("./data/common/commands.json");
+    // --- Load custom typo map ---
+    const commonCommandsPath = path.join(
+      __dirname,
+      "../data/common/commands.json"
+    );
+
     let commonMap = {};
     if (fs.existsSync(commonCommandsPath)) {
       try {
@@ -42,16 +50,17 @@ export const handleCommand = new Command("handle")
       }
     }
 
-    // --- Collect all possible commands ---
+    // --- Collect system commands ---
     let allCommands = [];
+
     try {
       const compgen = execSync("compgen -c", { shell: "/bin/bash" }).toString();
-      allCommands = compgen.split("\n").filter(Boolean);
+      allCommands = compgen.split("\n").filter((cmd) => cmd.trim() !== "");
     } catch {
       console.error(chalk.red("⚠️ Failed to fetch system commands."));
     }
 
-    // PATH executables
+    // Add PATH binaries
     const pathDirs = process.env.PATH.split(":");
     for (const dir of pathDirs) {
       try {
@@ -59,9 +68,10 @@ export const handleCommand = new Command("handle")
         allCommands.push(...files);
       } catch {}
     }
+
     allCommands = [...new Set(allCommands)];
 
-    // --- Does command actually exist? ---
+    // --- Determine if command exists ---
     let commandExists = false;
     try {
       execSync(`which ${baseCommand}`, { stdio: "ignore" });
@@ -70,7 +80,7 @@ export const handleCommand = new Command("handle")
       commandExists = false;
     }
 
-    // --- Generate insult ---
+    // --- Template insult ---
     const engine = new TemplateEngine(
       config.severity,
       config.insult_style,
@@ -78,21 +88,23 @@ export const handleCommand = new Command("handle")
     );
     const insult = engine.generateInsult();
 
-    // --- Suggest similar command ---
-    let suggestion = "";
+    // --- Custom suggestion (override priority) ---
+    const customSuggestion = commonMap[baseCommand] || "";
 
-    if (commonMap[baseCommand]) {
-      suggestion = commonMap[baseCommand];
-    } else {
+    // --- System suggestion ---
+    let systemSuggestion = "";
+    if (allCommands.length > 0) {
       const results = fuzz.extract(baseCommand, allCommands, {
         scorer: fuzz.partial_ratio,
       });
 
       if (results.length > 0) {
         const [match, score] = results[0];
-
         const threshold = baseCommand.length <= 3 ? 40 : 60;
-        if (score >= threshold) suggestion = match;
+
+        if (score >= threshold && match) {
+          systemSuggestion = match;
+        }
       }
     }
 
@@ -103,12 +115,24 @@ export const handleCommand = new Command("handle")
         chalk.redBright(`❌ Command "${baseCommand}" is not installed.`)
       );
 
-      if (suggestion)
-        console.log(chalk.greenBright(`💡 Maybe you meant: ${suggestion}`));
+      if (customSuggestion && systemSuggestion)
+        console.log(
+          chalk.greenBright(
+            `💡 Maybe you meant: ${customSuggestion} or ${systemSuggestion} (system)`
+          )
+        );
+      else if (customSuggestion)
+        console.log(
+          chalk.greenBright(`💡 Maybe you meant: ${customSuggestion}`)
+        );
+      else if (systemSuggestion)
+        console.log(
+          chalk.greenBright(`💡 Maybe you meant: ${systemSuggestion}`)
+        );
       else
         console.log(
           chalk.yellowBright(
-            `🤷 No idea what "${baseCommand}" was supposed to be.`
+            `🤷 No clue what "${baseCommand}" was supposed to be.`
           )
         );
     } else {
@@ -118,16 +142,13 @@ export const handleCommand = new Command("handle")
         )
       );
       console.log(chalk.redBright(`💀 ${insult}`));
-
-      if (suggestion && suggestion !== baseCommand)
-        console.log(chalk.greenBright(`💡 Did you mean: ${suggestion}?`));
     }
 
     // --- Logging ---
     LogManager.log({
       command: attempt,
       insult,
-      suggestion,
+      suggestion: customSuggestion || systemSuggestion,
       severity: config.severity,
       language: config.language,
       installed: commandExists,

@@ -2,7 +2,7 @@
 
 Abuse is a small command-line tool that responds to mistyped shell commands with a witty roast. It's configurable, multi-language ready, and intended for developers who like a little personality in their terminal.
 
-## Highlights
+## ⭐ Highlights
 
 - Playful roasts on invalid commands
 - Fuzzy suggestions for likely intended commands
@@ -10,7 +10,7 @@ Abuse is a small command-line tool that responds to mistyped shell commands with
 - Adjustable severity levels (low, medium, high)
 - Safe defaults: critical commands can be exempted
 
-## Install
+## 📦 Install
 
 Install from npm (global):
 
@@ -20,11 +20,11 @@ Install from npm (global):
 sudo npm install -g abuse-plus
 ```
 
-`For windows: Open Powershell and hit`
+<!-- `For windows: Open Powershell and hit`
 
 ```bash
 npm install -g abuse-plus
-```
+``` -->
 
 After installation the `abuse` command is available system-wide.
 
@@ -38,18 +38,24 @@ abuse shell --install
 
 This will append a hook to your .bashrc / .zshrc that forwards failed commands to Abuse.
 
-## Quick Usage
+## ⚡ Quick Usage
 
-Handle a mistyped command (example):
+Mistyped command (example):
 
 ```bash
-abuse handle gti status
+gti status
 ```
 
 Example output:
 
 > ❌ Command "gti" not found. \
 > 💡 Did you mean: `git`?
+
+Explicitly use abuse
+
+```bash
+abuse handle gti status
+```
 
 Manage config:
 
@@ -59,7 +65,7 @@ abuse config --get severity
 abuse config --path
 ```
 
-## Commands
+## 🎯 Commands
 
 - `abuse handle <attempt>` — Analyze a mistyped command and respond.
 - `abuse config [--set|--get|--delete|--reset|--path|--open]` — Manage user configuration.
@@ -67,7 +73,7 @@ abuse config --path
 
 See `bin/abuse.js` and `commands/` for the implementation and options.
 
-## Configuration
+## ⚙️ Configuration
 
 User config is stored at `~/.abuse/config.json`.
 
@@ -78,11 +84,6 @@ Example defaults:
   "language": "en",
   "severity": "medium",
   "enabled": true,
-  "ai_enabled": false,
-  "ai_model": "gpt-4.1-mini",
-  "ai_provider": "openai",
-  "ai_endpoint": "",
-  "allow_in_scripts": false,
   "exempt_commands": ["sudo", "ssh"],
   "insult_style": "sarcastic",
   "data_dir": "~/.abuse"
@@ -95,7 +96,7 @@ Config tips:
 - `insult_style`: `sarcastic` | `friendly` | `badass`
 - `exempt_commands`: list commands that should never be roasted
 
-## Severity & Styles
+## 🎭 Severity & Styles
 
 Severity levels control how aggressive the output is:
 
@@ -109,7 +110,7 @@ Insult styles define tone:
 - `friendly` — light-hearted, safe
 - `badass` — bold, action-movie style
 
-## Data layout
+## 📁 Data layout
 
 The insult phrases live under `data/insults/<lang>/<style>/<level>.json`. Each file is an array of strings.
 
@@ -131,35 +132,9 @@ data/
 					├── low.json
 					├── medium.json
 					└── high.json
-			hi(hindi)/
-				├── sarcastic/
-				│   ├── low.json
-				│   ├── medium.json
-				│   └── high.json
-				├── friendly/
-				│   ├── low.json
-				│   ├── medium.json
-				│   └── high.json
-				└── badass/
-					├── low.json
-					├── medium.json
-					└── high.json
-			te(telugu)/
-				├── sarcastic/
-				│   ├── low.json
-				│   ├── medium.json
-				│   └── high.json
-				├── friendly/
-				│   ├── low.json
-				│   ├── medium.json
-				│   └── high.json
-				└── badass/
-					├── low.json
-					├── medium.json
-					└── high.json
 ```
 
-## Exempt Commands
+## 🛡️ Exempt Commands
 
 By default, critical commands such as `sudo` and `ssh` are exempt. Add or modify exemptions via config:
 
@@ -167,7 +142,7 @@ By default, critical commands such as `sudo` and `ssh` are exempt. Add or modify
 abuse config --set exempt_commands='["sudo","git","npm"]'
 ```
 
-## Suggestion Engine & Logging
+## 🧠 Suggestion Engine & Logging
 
 The suggestion engine combines:
 
@@ -177,7 +152,7 @@ The suggestion engine combines:
 
 Roasts and suggestions are logged to `~/.abuse/logs.jsonl` as JSON lines with fields like `command`, `suggestion`, `insult`, `severity`, and `timestamp`.
 
-## Development
+## 👨‍💻 Development
 
 Clone and run locally:
 
@@ -185,7 +160,6 @@ Clone and run locally:
 git clone https://github.com/neekunjchaturvedi/abuse
 cd abuse
 npm install
-node bin/abuse.js handle testcmd
 ```
 
 Project layout highlights:
@@ -195,7 +169,38 @@ Project layout highlights:
 - `core/` — config and log managers, template engine
 - `data/insults` — insult datasets
 
-## Contributing
+```abuse/
+├── bin/
+│   └── abuse.js                # CLI entrypoint
+│
+├── commands/
+│   ├── analyze.js              # Debugging / analysis tools
+│   ├── config.js               # Config management
+│   ├── handle.js               # Core "roast + suggestion" handler
+│   ├── init.js                 # Initialization helpers
+│   ├── logs.js                 # Log viewing/clearing
+│   └── shell.js                # Shell integration (bash, zsh, PowerShell)
+│
+├── core/
+│   ├── configManager.js        # Loads/saves user config from ~/.abuse
+│   ├── logManager.js           # Writes logs to ~/.abuse/logs.jsonl
+│   └── templateEngine.js       # Insult generator + dataset selector
+│
+├── data/
+│   ├── common/
+│   │   └── commands.json       # Common typos → correct command mapping
+│   └── insults/
+│       └── en/
+│           ├── sarcastic/      # Sarcastic insults (low/medium/high)
+│           ├── friendly/       # Friendly insults
+│           └── badass/         # Badass insults
+│
+├── package.json                # NPM package info
+├── LICENSE
+└── README.md
+```
+
+## 🤝 Contributing
 
 Contributions are welcome: bug reports, PRs, and new roast entries. Please:
 
@@ -204,17 +209,17 @@ Contributions are welcome: bug reports, PRs, and new roast entries. Please:
 3. Add tests where applicable
 4. Open a PR with a clear description
 
-## License
+## 📜 License
 
 MIT © 2025
 
-## Contact
+## 💬 Contact
 
 If you have questions or suggestions, open an issue or reach out via the repository.
 
 #### https://github.com/neekunjchaturvedi/abuse
 
-## Whats Tuning Up
+## 🔮 Whats Tuning Up
 
 ```bash
 Windows OS support
@@ -223,7 +228,7 @@ Statistics
 and much more
 ```
 
-## What You can do
+## 💡 What You can do
 
 `Contribute towards Roasts for your prefered language`
 
@@ -231,7 +236,7 @@ and much more
 
 `Maybe just a correction in the code`
 
-## Because we love FOSS
+## 🚀 Because we love FOSS
 
 Abuse CLI is free, open-source, and community-driven. Built by developer, for developers.
 If you enjoy this project, contribute, report issues, or improve it.
